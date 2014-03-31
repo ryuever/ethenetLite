@@ -11,14 +11,14 @@
 #include "enl_thread.h"
 #include "enl_network.h"
 #include "enl_parser.h"
-
+#include "enl_object.h"
 
 int enl_startup()
 {
 	int ret = 0;
 	unsigned char edt_size = 0;
 	unsigned char* edt = NULL;
-	unsigned char frame_size = 0;
+	unsigned int frame_size = 0;
 	unsigned char* frame = NULL;
 
 	if(-1 == enl_nwthread_create())

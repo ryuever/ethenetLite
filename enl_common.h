@@ -85,7 +85,7 @@ typedef struct st_enl_frame_edata
 	unsigned int deoj;
 	unsigned char esv;
 	unsigned char opc;
-	struct enl_frame_prop* prop;
+	enl_frame_prop* prop;
 }enl_frame_edata;
 
 typedef struct st_enl_frame
@@ -102,14 +102,14 @@ typedef struct st_enl_obj
 	unsigned char cls_gcode; //class group code
 	unsigned char cls_code; //class code
 	unsigned char ins_code; //instance code
-	struct enl_object_prop* prop;
-	struct enl_object* prev;
-	struct enl_object* next;
+	enl_object_prop* prop;
+	struct st_enl_obj* prev;
+	struct st_enl_obj* next;
 }enl_object;
 
 typedef struct st_enl_obj_list
 {
-	struct enl_object* eoj;
+	enl_object* eoj;
 }enl_object_list;
 
 #endif  /* ENL_COMMON_H */

@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "enl_object.h"
+#include "enl_memory.h"
 
 enl_object_list* dev_obj_list = NULL;
 enl_object_list* prof_obj_list = NULL;
@@ -59,7 +60,7 @@ int enl_create_eoj(unsigned char obj_type, unsigned char class_group_code, unsig
 
 	if(dev_obj_list == NULL)
 	{
-		dev_obj_list = (enl_object_list*)enl_malloc(sizeof(enl_object_list));
+		dev_obj_list = enl_malloc(sizeof(enl_object_list));
 		dev_obj_list->eoj = NULL;
 	}
 

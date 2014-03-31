@@ -10,9 +10,10 @@
 #include "enl_common.h"
 #include "enl_parser.h"
 #include "enl_object.h"
+#include "enl_memory.h"
+#include "enl_api.h"
 
-
-int get_one_byte(void* data, int data_size, int pos, unsigned char* ret)
+int get_one_byte(void* data, int data_size, intptr_t pos, unsigned char* ret)
 {
 	unsigned char* p = 0;
 	unsigned char* offset = (unsigned char*)pos;
@@ -22,14 +23,14 @@ int get_one_byte(void* data, int data_size, int pos, unsigned char* ret)
 		return -1;
 	}
 
-	p = (unsigned char*)((int)data + (int)offset);
+	p = (unsigned char*)((intptr_t)data + (intptr_t)offset);
 
 	*ret = *p;
 
 	return 0;
 }
 
-int get_two_bytes(void* data, int data_size, int pos, unsigned short* ret)
+int get_two_bytes(void* data, int data_size, intptr_t pos, unsigned short* ret)
 {
 	unsigned char* p = 0;
 	unsigned char* offset = (unsigned char*)pos;
@@ -41,7 +42,7 @@ int get_two_bytes(void* data, int data_size, int pos, unsigned short* ret)
 		return -1;
 	}
 
-	p = (unsigned char*)((int)data + (int)offset);
+	p = (unsigned char*)((intptr_t)data + (intptr_t)offset);
 
 	*b0 = *p;
 	*b1 = *(p + 1);
@@ -49,7 +50,7 @@ int get_two_bytes(void* data, int data_size, int pos, unsigned short* ret)
 	return 0;
 }
 
-int get_three_bytes(void* data, int data_size, int pos, unsigned int* ret)
+int get_three_bytes(void* data, int data_size, intptr_t pos, unsigned int* ret)
 {
 	unsigned char* p = 0;
 	unsigned char* offset = (unsigned char*)pos;
@@ -63,7 +64,7 @@ int get_three_bytes(void* data, int data_size, int pos, unsigned int* ret)
 		return -1;
 	}
 
-	p = (unsigned char*)((int)data + (int)offset);
+	p = (unsigned char*)((intptr_t)data + (intptr_t)offset);
 
 	*b0 = *p;
 	*b1 = *(p + 1);
@@ -73,7 +74,7 @@ int get_three_bytes(void* data, int data_size, int pos, unsigned int* ret)
 	return 0;
 }
 
-int get_multiple_bytes(void* data, int data_size, int pos, int ret_size, void* ret)
+int get_multiple_bytes(void* data, int data_size, intptr_t pos, int ret_size, void* ret)
 {
 	unsigned char* p = 0;
 	unsigned char* offset = (unsigned char*)pos;
@@ -89,14 +90,14 @@ int get_multiple_bytes(void* data, int data_size, int pos, int ret_size, void* r
 		return -1;
 	}
 
-	p = (unsigned char*)((int)data + (int)offset);
+	p = (unsigned char*)((intptr_t)data + (intptr_t)offset);
 
 	memcpy(ret, p, ret_size);
 
 	return 0;
 }
 
-int write_bytes(void*buff, void* data, int pos, int size)
+int write_bytes(void*buff, void* data, intptr_t pos, int size)
 {
 	unsigned char* p = 0;
 	unsigned char* offset = (unsigned char*)pos;
@@ -106,76 +107,9 @@ int write_bytes(void*buff, void* data, int pos, int size)
 		return 0;
 	}
 
-	p = (unsigned char*)((int)buff + (int)offset);
+	p = (unsigned char*)((intptr_t)buff + (intptr_t)offset);
 
 	memcpy(p, data, size);
-
-	return 0;
-}
-
-int enl_parser_recv_data(int ip, unsigned char* data, int data_size)
-{
-	unsigned char ehd1 = 0;
-	unsigned char ehd2 = 0;
-	unsigned short tid = 0;
-
-	if(-1 == get_one_byte(data, data_size, FRAME_POS_EHD1, &ehd1))
-	{
-		//data error
-		return -1;
-	}
-
-	if((ehd1 & 0xF0 != 0x10) && (ehd1 & 0x80 != 0x80))
-	{
-		//unknown protocol
-		return -1;
-	}
-
-	if(-1 == get_one_byte(data, data_size, FRAME_POS_EHD2, &ehd2))
-	{
-		//data error
-		return -1;
-	}
-
-	if((ehd2 != 0x81) && (ehd2 != 0x82))
-	{
-		if(ehd2 & 0x80 == 0x80)
-		{
-			//echonet protocol unsupported
-			return -1;
-		}
-
-		//unknown frame format
-		return -1;
-	}
-
-	if(-1 == get_two_bytes(data, data_size, FRAME_POS_TID, &tid))
-	{
-		//data error
-		return -1;
-	}
-
-	//arbitrary message format
-	if(ehd2 == 0x82)
-	{
-		unsigned char* edata = data + FRAME_POS_EDATA;
-		//enl_free_text_callback(ip, ehd1, ehd2, tid, edata, data_size - FRAME_POS_EDATA);//
-	}
-	//specified message format
-	else if(ehd2 == 0x81)
-	{
-		enl_frame_edata* edata_formated = (enl_frame_edata*)enl_malloc(sizeof(enl_frame_edata));
-		unsigned char* edata = data + FRAME_POS_EDATA;
-		if(-1 == enl_parser_edata(edata, data_size - FRAME_POS_EDATA, edata_formated))
-		{
-			//edata parsing error
-			enl_free(edata_formated);
-			return -1;
-		}
-		enl_process_recv_data(ip, ehd1, ehd2, tid, edata_formated, sizeof(enl_frame_edata));
-		//enl_spec_text_callback(ip, ehd1, ehd2, tid, edata_formated, sizeof(enl_frame_edata));//
-		enl_free(edata_formated);
-	}
 
 	return 0;
 }
@@ -234,6 +168,75 @@ int enl_parser_edata(unsigned char* edata, int edata_size, enl_frame_edata* edat
 
 	return 0;
 }
+
+
+int enl_parser_recv_data(int ip, unsigned char* data, int data_size)
+{
+	unsigned char ehd1 = 0;
+	unsigned char ehd2 = 0;
+	unsigned short tid = 0;
+
+	if(-1 == get_one_byte(data, data_size, FRAME_POS_EHD1, &ehd1))
+	{
+		//data error
+		return -1;
+	}
+
+	if(((ehd1 & 0xF0) != 0x10) && ((ehd1 & 0x80) != 0x80))
+	{
+		//unknown protocol
+		return -1;
+	}
+
+	if(-1 == get_one_byte(data, data_size, FRAME_POS_EHD2, &ehd2))
+	{
+		//data error
+		return -1;
+	}
+
+	if((ehd2 != 0x81) && (ehd2 != 0x82))
+	{
+      if((ehd2 & 0x80) == 0x80)
+		{
+			//echonet protocol unsupported
+			return -1;
+		}
+
+		//unknown frame format
+		return -1;
+	}
+
+	if(-1 == get_two_bytes(data, data_size, FRAME_POS_TID, &tid))
+	{
+		//data error
+		return -1;
+	}
+
+	//arbitrary message format
+	if(ehd2 == 0x82)
+	{
+      unsigned char* edata = data + (intptr_t)FRAME_POS_EDATA;
+		//enl_free_text_callback(ip, ehd1, ehd2, tid, edata, data_size - FRAME_POS_EDATA);//
+	}
+	//specified message format
+	else if(ehd2 == 0x81)
+	{
+		enl_frame_edata* edata_formated = (enl_frame_edata*)enl_malloc(sizeof(enl_frame_edata));
+		unsigned char* edata = data + FRAME_POS_EDATA;
+		if(-1 == enl_parser_edata(edata, data_size - FRAME_POS_EDATA, edata_formated))
+		{
+			//edata parsing error
+			enl_free(edata_formated);
+			return -1;
+		}
+		enl_process_recv_data(ip, ehd1, ehd2, tid, edata_formated, sizeof(enl_frame_edata));
+		//enl_spec_text_callback(ip, ehd1, ehd2, tid, edata_formated, sizeof(enl_frame_edata));//
+		enl_free(edata_formated);
+	}
+
+	return 0;
+}
+
 
 int enl_parse_property(unsigned char* data, unsigned int data_size, unsigned char opc, enl_frame_prop** prop)
 {
