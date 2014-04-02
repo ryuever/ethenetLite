@@ -20,6 +20,8 @@ int enl_add_obj_to_list(enl_object* eoj){
 		dev_obj_list->eoj = eoj;
 		//head->next = NULL;
 	}else{
+        // the recently added enl_object will be the header, Then update the next pointer
+        // of the new header and prev pointer of the old header.
 		enl_object* next_obj = head;
 		head = eoj;
 		head->next = next_obj;
@@ -57,6 +59,7 @@ int enl_create_eoj(unsigned char obj_type,
                    unsigned int* eoj_code){
 	enl_object* eoj = NULL;
 
+    // first create a list pointer, length is 8 bytes.
 	if(dev_obj_list == NULL){
 		dev_obj_list = enl_malloc(sizeof(enl_object_list));
 		dev_obj_list->eoj = NULL;
@@ -96,6 +99,7 @@ unsigned int enl_convert_eoj_code(unsigned char class_group_code,
 	*b0 = class_group_code;
 	*b1 = class_code;
 	*b2 = instance_code;
+    // below assignment should be 0 or 0x0 ????????????????????
 	*b3 = 0;
 
 	return ret;
