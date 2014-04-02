@@ -61,6 +61,7 @@ int enl_create_eoj(unsigned char obj_type,
 
     // first create a list pointer, length is 8 bytes.
 	if(dev_obj_list == NULL){
+        printf("enl_object.c : creating enl_object_list with %zu\n",sizeof(enl_object_list));
 		dev_obj_list = enl_malloc(sizeof(enl_object_list));
 		dev_obj_list->eoj = NULL;
 	}
@@ -70,6 +71,7 @@ int enl_create_eoj(unsigned char obj_type,
 		return 0;
 	}
 
+    printf("enl_object.c : creating enl_object with %zu\n",sizeof(enl_object));
 	eoj = (enl_object*)enl_malloc(sizeof(enl_object));
 	eoj->type = obj_type;
 	eoj->cls_gcode = class_group_code;
@@ -178,11 +180,20 @@ int enl_get_property_status(unsigned int eoj_code,
 	return 0;
 }
 
+//------------------------------------------------------------------------------
+// First : According to eoj_code(header info) find the position of enl_object
+// Second : for this enl_object. epc as a condition if epc couldn't be found,
+//          create this property and return. if epc matchs, comparing pdc with 
+//          argument pdc, if it is not identical, free the edt value and malloc
+//          a new edt with length of pdc value of argument edt.
+//------------------------------------------------------------------------------
 int enl_set_property_status(unsigned int eoj_code, 
                             unsigned char epc, 
                             unsigned char pdc, 
                             unsigned char* edt, 
                             unsigned char* status){
+
+    // find the obj node according to eoj_code
 	enl_object* obj = enl_get_object_location(eoj_code);
 	if(obj == NULL){
 		*status = STATUS_OBJ_NOT_EXISTED;
@@ -193,10 +204,10 @@ int enl_set_property_status(unsigned int eoj_code,
 	enl_object_prop* p = head;
 
 	if(head == NULL){
-		head = (enl_object_prop*)enl_malloc(sizeof(enl_object_prop));
+		head = enl_malloc(sizeof(enl_object_prop));
 		head->epc = epc;
 		head->pdc = pdc;
-		head->edt = (unsigned char*)enl_malloc(pdc);
+		head->edt = enl_malloc(pdc);
 		memcpy(head->edt, edt, pdc);
 	}
 	else{
@@ -204,10 +215,10 @@ int enl_set_property_status(unsigned int eoj_code,
 			p = p->next;
 			if(p == NULL){
 				enl_object_prop* next_prop = head;
-				head = (enl_object_prop*)enl_malloc(sizeof(enl_object_prop));
+				head = enl_malloc(sizeof(enl_object_prop));
 				head->epc = epc;
 				head->pdc = pdc;
-				head->edt = (unsigned char*)enl_malloc(pdc);
+				head->edt = enl_malloc(pdc);
 				memcpy(head->edt, edt, pdc);
 				head->next = next_prop;
 				head->next->prev = head;
@@ -218,12 +229,11 @@ int enl_set_property_status(unsigned int eoj_code,
 		p->epc = epc;
 		if(p->pdc != pdc){
 			enl_free(p->edt);
-			p->edt = (unsigned char*)enl_malloc(pdc);
+			p->edt = enl_malloc(pdc);
 		}
 		memcpy(p->edt, edt, pdc);
 		p->pdc = pdc;
 	}
-
 	return 0;
 }
 
@@ -233,6 +243,7 @@ int enl_set_property(unsigned int eoj_code,
                      unsigned char* edt, 
                      unsigned char* status, 
                      unsigned char access_rule){
+    // first obj should exist.
 	enl_object* obj = enl_get_object_location(eoj_code);
 	if(obj == NULL){
 		*status = STATUS_OBJ_NOT_EXISTED;
@@ -243,25 +254,31 @@ int enl_set_property(unsigned int eoj_code,
 	enl_object_prop* p = head;
 
 	if(obj->prop == NULL){
+        printf("enl_object.c : The first time creating enl_object_prop with %zu\n",sizeof(enl_object_prop));
 		enl_object_prop* ptemp = (enl_object_prop*)enl_malloc(sizeof(enl_object_prop));
 		obj->prop = ptemp;
 		head = obj->prop;
 		head->access_rule = access_rule;
 		head->epc = epc;
 		head->pdc = pdc;
+        printf("enl_object.c : The first time creating edt in enl_object_prop with %x\n",pdc);
 		head->edt = (unsigned char*)enl_malloc(pdc);
 		memcpy(head->edt, edt, pdc);
 	}
 	else{
+        // first traversal property list, if not matched. create a new property as the new header,
+        // then update next pointer of new header and prev pointer of old header
 		while(p->epc != epc){
 			p = p->next;
 			if(p == NULL){
 				enl_object_prop* next_prop = head;
-				head = (enl_object_prop*)enl_malloc(sizeof(enl_object_prop));
+                printf("enl_object.c : creating successive enl_object_prop with %zu\n",sizeof(enl_object_prop));
+				head = enl_malloc(sizeof(enl_object_prop));
 				head->access_rule = access_rule;
 				head->epc = epc;
 				head->pdc = pdc;
-				head->edt = (unsigned char*)enl_malloc(pdc);
+                printf("enl_object.c : creating successive edt in enl_object_prop with %x\n",pdc);
+				head->edt = enl_malloc(pdc);
 				memcpy(head->edt, edt, pdc);
 				head->next = next_prop;
 				head->next->prev = head;
@@ -272,7 +289,7 @@ int enl_set_property(unsigned int eoj_code,
 		p->epc = epc;
 		if(p->pdc != pdc){
 			enl_free(p->edt);
-			p->edt = (unsigned char*)enl_malloc(pdc);
+			p->edt = enl_malloc(pdc);
 		}
 		memcpy(p->edt, edt, pdc);
 		p->pdc = pdc;
@@ -280,7 +297,6 @@ int enl_set_property(unsigned int eoj_code,
 
 	return 0;
 }
-
 
 int enl_get_object_num(unsigned char* edt_size){
 	unsigned char obj_num = 0;
